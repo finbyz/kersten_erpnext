@@ -49,38 +49,38 @@ def send_message(sender, message, first_name = None, last_name = None, mobile_no
 	contact_data = frappe.db.sql(f""" Select co.name , dl.link_name From `tabContact` as co
 						  					Left join `tabContact Email` as ce ON ce.parent = co.name
 						  					left join `tabDynamic Link` as dl ON dl.parent = co.name
-						  					Where ce.email_id = '{sender}' and dl.link_doctype = "Customer" 
+						  					Where ce.email_id = '{sender}' and dl.link_doctype = "Lead" 
 											""",as_dict = 1)
 	if contact_data:
 		doc = frappe.new_doc("Opportunity")
-		doc.opportunity_from = "Customer"
+		doc.opportunity_from = "Lead"
 		doc.party_name = contact_data[0].link_name
 		doc.contact_mobile = mobile_no
 		doc.contact_email = sender
 		doc.save(ignore_permissions = True)
 		add_comment("Opportunity" , doc.name , content=message , comment_email = sender, comment_by = None) 
 	
-	contact_but_no_customer = frappe.db.sql(f""" Select co.name  From `tabContact` as co
+	contact_but_no_lead = frappe.db.sql(f""" Select co.name  From `tabContact` as co
 						  					Left join `tabContact Email` as ce ON ce.parent = co.name
 						  					Where ce.email_id = '{sender}'
 											""",as_dict = 1)
 	
-	if not contact_but_no_customer:
-		customer = frappe.new_doc("Customer")
-		customer.customer_name=organisation_name
-		customer.customer_type="Company"
-		customer.customer_group="Account Sales"
-		customer.territory="All Territories"
-		customer.save(ignore_permissions = True)
+	if not contact_but_no_lead:
+		lead = frappe.new_doc("Lead")
+		lead.first_name = first_name
+		lead.last_name = last_name
+		lead.email_id = sender
+		lead.company_name = organisation_name
+		lead.save(ignore_permissions = True)
  		
 		opportunity = frappe.new_doc("Opportunity")
-		opportunity.opportunity_from = "Customer"
-		opportunity.party_name = customer.name
+		opportunity.opportunity_from = "Lead"
+		opportunity.party_name = lead.name
 		opportunity.contact_email = sender
 		opportunity.contact_mobile = mobile_no
 		opportunity.source = ""
 		opportunity.save(ignore_permissions = True)
-		frappe.db.set_value("Customer" , customer.name , 'opportunity_name' , opportunity.name , update_modified=False)
+		# frappe.db.set_value("Customer" , customer.name , 'opportunity_name' , opportunity.name , update_modified=False)
 		add_comment(reference_doctype = "Opportunity", reference_name=opportunity.name, content = message, comment_email=sender, comment_by = frappe.session.user)
 		
 		contact = frappe.new_doc("Contact")
@@ -93,8 +93,8 @@ def send_message(sender, message, first_name = None, last_name = None, mobile_no
 			"is_primary":1
 		})
 		contact.append("links",{
-			"link_doctype":"Customer",
-			"link_name":customer.name
+			"link_doctype":"Lead",
+			"link_name":lead.name
 		})
 		contact.append("phone_nos",{
 			"phone":mobile_no,
