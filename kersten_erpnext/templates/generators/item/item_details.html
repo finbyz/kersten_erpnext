@@ -7,10 +7,6 @@
         font-size: 20px;
         margin: 0;
     }
-	.product-title-link {
-		color: inherit;
-		text-decoration: none;
-	}
 	.section-cta-and-image{
 		position: relative;
 		border-radius: 1rem;
@@ -22,14 +18,21 @@
 </style>
 
 <div class="col-md-7 product-details {{ width_class }}">
-	<div class="product-title" itemprop="name">
-		<h1 class="fontsize">
-			{% if website_item_desk_route %}
-				<a class="product-title-link" href="{{ website_item_desk_route }}" target="_blank" rel="noopener">{{ doc.web_item_name }}</a>
-			{% else %}
-				{{ doc.web_item_name }}
-			{% endif %}
-		</h1>
+	<div class="d-flex">
+		<!-- title -->
+		<div class="product-title col-11" itemprop="name">
+			<h1 class="fontsize">{{ doc.web_item_name }}</h1>
+		</div>
+
+		<!-- Wishlist -->
+		{% if cart_settings.enable_wishlist %}
+			<div class="like-action-item-fp like-action {{ 'like-action-wished' if wished else ''}} ml-2"
+				data-item-code="{{ doc.item_code }}">
+				<svg class="icon sm">
+					<use class="{{ 'wished' if wished else 'not-wished' }} wish-icon" href="#icon-heart"></use>
+				</svg>
+			</div>
+		{% endif %}
 	</div>
 
 	<!-- <div itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
@@ -53,7 +56,7 @@
 		</span>
 		<span itemprop="name">{{ doc.item_code }}</span>
 	</p>
-
+	
 	{% if has_variants %}
 		<!-- configure template -->
 		{% include "templates/generators/item/item_configure.html" %}
@@ -61,42 +64,16 @@
 		<!-- add variant to cart -->
 		{% include "templates/generators/item/item_add_to_cart.html" %}
 	{% endif %}
-</div>
-
-{% if doc.custom_override_page_builder and frappe.utils.strip_html(doc.short_description or '') %}
-	<div class="product-short-description" itemprop="description">
-		{{ doc.short_description | safe }}
-	</div>
-{% endif %}
-
-<div class="product-description"{% if not doc.custom_override_page_builder %} itemprop="description"{% endif %}>
-	{% if doc.custom_override_page_builder %}
-		{% if website_specifications and website_specifications|length > 0 %}
-			<div class="fact-grid">
-				{% for spec in website_specifications %}
-					{% if spec.custom_key_fact == 1 %}
-						{% set field_type = frappe.get_doc("Item Website Specification Field Type", _(spec.custom_field_type)) %}
-
-						<div class="fact-card">
-							<a href="#Specifications">
-								<div class="fact-label">{{ _(field_type.display_label) }}</div>
-								<div class="fact-value">{{ _(spec.description) }}</div>
-							</a>
-						</div>
-					{% endif %}
-				{% endfor %}
-			</div>
-		{% endif %}
+	<!-- description -->
+	<div class="product-description" itemprop="description">
+	{% if frappe.utils.strip_html(doc.web_long_description or '') %}
+		{{ doc.web_long_description | safe }}
+	{% elif frappe.utils.strip_html(doc.description or '')  %}
+		{{ doc.description | safe }}
 	{% else %}
-		<!-- Old Page Builder content -->
-		{% if frappe.utils.strip_html(doc.web_long_description or '') %}
-			{{ doc.web_long_description | safe }}
-		{% elif frappe.utils.strip_html(doc.description or '')  %}
-			{{ doc.description | safe }}
-		{% else %}
-			{{ "" }}
-		{% endif  %}
+		{{ "" }}
 	{% endif  %}
+	</div>
 </div>
 
 {% block base_scripts %}
